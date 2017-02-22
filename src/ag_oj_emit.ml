@@ -153,7 +153,7 @@ type parse_field = {
   field_ref   : string;
   constructor : int option;
   payloads    : int list;
-  implicit    : bool;
+  implicit_   : bool;
 }
 
 (* identifiers can't begin with digits *)
@@ -186,7 +186,7 @@ let get_fields p a =
     let payloads = [] in
     k, {
       mapping=x; default; ocamlf; jsonf;
-      field_ref; constructor; payloads; implicit=false;
+      field_ref; constructor; payloads; implicit_=false;
     }::acc
   ) (0,[]) (Array.mapi (fun i x -> (i, x)) a) in
 
@@ -247,7 +247,7 @@ let get_fields p a =
           field_ref = "field_"^f_name;
           constructor = None;
           payloads = [i];
-          implicit = true;
+          implicit_ = true;
         } in
         Hashtbl.replace fm i   { field with constructor = Some c_i };
         Hashtbl.replace fm c_i imp;
@@ -714,13 +714,13 @@ and make_record_writer p a record_kind =
       `Inline [
         `Line (sprintf "let %s =" (constr_var field));
         `Block (string_expr_of_constr_field p v_of_field
-                  (if field.implicit then fields.(payload_i) else field));
+                  (if field.implicit_ then fields.(payload_i) else field));
         `Line "in";
       ]
     | { payloads = [] } -> `Inline []
   ) fields in
 
-  let v_or_constr v field = if field.implicit then constr_var field else v in
+  let v_or_constr v field = if field.implicit_ then constr_var field else v in
 
   let write_fields =
     Array.mapi (
@@ -802,7 +802,7 @@ let study_record p fields =
             `Line ") in";
           ]
       in
-      let create = if field.implicit
+      let create = if field.implicit_
         then `Block [] (* implicit fields don't have realizations in OCaml *)
         else
           let oname = field.ocamlf.Ag_ocaml.ocaml_fname in
@@ -1348,7 +1348,7 @@ and make_deconstructed_reader p loc fields set_bit =
           `Block (reconstruct_field constr field);
           `Line ")";
           match field.default with
-          | Default _ when constr.implicit ->
+          | Default _ when constr.implicit_ ->
             `Block [
               `Line "else (";
               set_bit k;
